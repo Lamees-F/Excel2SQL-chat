@@ -2,14 +2,13 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
 import chardet
-from dotenv import load_dotenv
-import os
+import ollama
 
-load_dotenv()
+client = ollama.Client(host='http://localhost:11434')
 
 
-st.title("Excel to SQL Chatbot")
-st.write("Upload an Excel file and convert it to a SQL database then use NL to generate sql qurey.")
+st.title("Excel to SQL")
+st.write("Upload an Excel file and upload it to a SQLite database then use NL to generate sql qurey and print results.")
 
 # step0: allow user to upload files 
 uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx", "xls","csv"])
@@ -40,5 +39,34 @@ if uploaded_file is not None:
     
     # st.write("Sample data from the SQL database:")
     # st.dataframe(result)
+    nl_query = st.text_input("Enter your natural language query:")
 
+    if nl_query:
+        # Step4: generate SQL using Ollama
+        prompt = f"""
+        You are a SQL expert. Convert this natural language query to SQL:
+        QUERY: "{nl_query}"
+        
+        SCHEMA: {columns}
+        TABLE NAME: "data"
+        
+        Return ONLY the SQL query, no explanations.
+        """
 
+        try:
+            response = client.generate(
+                model='llama3.2:3b',  
+                prompt=prompt,
+                options={'temperature': 0.1}  
+            )
+            
+            sql_query = response['response'].strip()
+            st.write("Generated SQL:")
+            st.code(sql_query)
+
+            result = pd.read_sql_query(sql_query, engine)
+            st.write("Query Results:")
+            st.dataframe(result)
+
+        except Exception as e:
+            st.error(f"Error generating SQL: {str(e)}")
