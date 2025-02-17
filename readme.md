@@ -38,7 +38,3 @@ This project allows users to upload an Excel or CSV file, load it into a SQLite 
 
 ## Screenshot
 ![alt text](image.png)
-
-## License
-
-This project is licensed under the MIT License.
